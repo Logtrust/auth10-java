@@ -222,7 +222,7 @@ public class SamlTokenValidator {
 			throws ParserConfigurationException, SAXException, IOException,
 			UnmarshallingException, FederationException {
 		Document document = getDocument(rstr);
-
+		System.out.println(rstr);
 		String xpath = "//*[local-name() = 'Assertion']";
 
 		NodeList nodes = null;
@@ -329,7 +329,7 @@ public class SamlTokenValidator {
 
 		String thumbprintFromToken = SamlTokenValidator
 				.getThumbPrintFromCert(pubKey);
-
+		System.out.println("thumbprintFromToke -> " + thumbprintFromToken + " ThumbprintConfigured --> " + thumbprint);
 		return thumbprintFromToken.equalsIgnoreCase(thumbprint);
 	}
 
