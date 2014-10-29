@@ -34,6 +34,7 @@ import java.util.List;
 public class FederatedPrincipal implements Principal {
 	private static final String NameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name";
 	private static final String EmailClaimType = "http://schemas.xmlsoap.org/claims/EmailAddress";
+	private static final String subjectData = "subject";
 	
 	protected List<Claim> claims = null;
 
@@ -45,8 +46,15 @@ public class FederatedPrincipal implements Principal {
 		String name = "";
 		
 		for (Claim claim : claims) {
-			if (claim.getClaimType().equals(NameClaimType))
-				name = claim.getClaimValue();
+                    if (claim.getClaimType().equals(subjectData))
+                            name = claim.getClaimValue();
+                }
+		
+		if (name.isEmpty()){
+        		for (Claim claim : claims) {
+        			if (claim.getClaimType().equals(NameClaimType))
+        				name = claim.getClaimValue();
+        		}
 		}
 		
 		if (name.isEmpty()){

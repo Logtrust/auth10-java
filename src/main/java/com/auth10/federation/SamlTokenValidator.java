@@ -44,12 +44,14 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SignableSAMLObject;
-
+import org.opensaml.saml1.core.SubjectStatement;
+import org.opensaml.saml2.core.Subject;
 import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.io.Unmarshaller;
@@ -176,15 +178,21 @@ public class SamlTokenValidator {
 
 		List<Claim> claims = null;
 		if (samlToken instanceof org.opensaml.saml1.core.Assertion) {
-			claims = getClaims((org.opensaml.saml1.core.Assertion) samlToken);
+		    org.opensaml.saml1.core.Assertion  _token =    (org.opensaml.saml1.core.Assertion) samlToken;
+		    claims = getClaims((org.opensaml.saml1.core.Assertion) samlToken);
 		}
 
 		if (samlToken instanceof org.opensaml.saml2.core.Assertion) {
-			claims = getClaims((org.opensaml.saml2.core.Assertion) samlToken);
+		    org.opensaml.saml2.core.Assertion  _token =    (org.opensaml.saml2.core.Assertion) samlToken;		   
+		    claims = getClaims((org.opensaml.saml2.core.Assertion) samlToken);
+		    Subject subject = _token.getSubject();
+		    if (subject != null){
+		        String subjectValue = subject.getNameID().getValue();
+		        Claim subjectClaim = new Claim("subject", subjectValue);
+	                claims.add(subjectClaim);
+		    }		   
 		}
-
 		if (this.validateExpiration) {
-
 			boolean expired = false;
 			if (samlToken instanceof org.opensaml.saml1.core.Assertion) {
 				Instant notBefore = ((org.opensaml.saml1.core.Assertion) samlToken).getConditions().getNotBefore().toInstant();
