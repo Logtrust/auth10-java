@@ -92,7 +92,7 @@ public class FederatedLoginManager {
 		
 	protected void setTrustedIssuers(SamlTokenValidator validator) 
 			throws FederationException {
-		String[] trustedIssuers = FederatedConfiguration.getInstance().getTrustedIssuers();
+		String[] trustedIssuers = FederatedConfiguration.getInstance(request).getTrustedIssuers();
 		if (trustedIssuers != null) {
 			validator.getTrustedIssuers().addAll(Arrays.asList(trustedIssuers));
 		}		
@@ -100,7 +100,7 @@ public class FederatedLoginManager {
 	
 	protected void setAudienceUris(SamlTokenValidator validator) 
 			throws FederationException {
-		String[] audienceUris = FederatedConfiguration.getInstance().getAudienceUris();
+		String[] audienceUris = FederatedConfiguration.getInstance(request).getAudienceUris();
 		for (String audienceUriStr : audienceUris) {
 			try {
 				validator.getAudienceUris().add(new URI(audienceUriStr));
@@ -112,21 +112,21 @@ public class FederatedLoginManager {
 	
 	protected void setThumbprint(SamlTokenValidator validator)
 			throws FederationException {
-		String thumbprint = FederatedConfiguration.getInstance().getThumbprint();
+		String thumbprint = FederatedConfiguration.getInstance(request).getThumbprint();
 		validator.setThumbprint(thumbprint);
 	}
 
-	public static String getFederatedLoginUrl(String returnURL) {
-		return getFederatedLoginUrl(null, null, returnURL); 
+	public static String getFederatedLoginUrl(HttpServletRequest request, String returnURL) {
+		return getFederatedLoginUrl(request, null, null, returnURL); 
 	}
 	
-	public static String getFederatedLoginUrl(String realm, String replyURL, String returnURL) {
+	public static String getFederatedLoginUrl(HttpServletRequest request, String realm, String replyURL, String returnURL) {
 		Calendar c = Calendar.getInstance();
 
 		String encodedDate = CHECKING_FORMAT.print(c.getTimeInMillis());
 
 		if (realm == null) {
-			realm = FederatedConfiguration.getInstance().getRealm();
+			realm = FederatedConfiguration.getInstance(request).getRealm();
 		}
 		String encodedRealm = URLUTF8Encoder.encode(realm);
 
@@ -135,12 +135,12 @@ public class FederatedLoginManager {
 			encodedReply = URLUTF8Encoder.encode(replyURL);
 		}
 		else {
-			encodedReply = (FederatedConfiguration.getInstance().getReply() != null) ? URLUTF8Encoder.encode(FederatedConfiguration.getInstance().getReply()) : null;
+			encodedReply = (FederatedConfiguration.getInstance(request).getReply() != null) ? URLUTF8Encoder.encode(FederatedConfiguration.getInstance(request).getReply()) : null;
 		}
 
 		String encodedRequest = (returnURL != null) ? URLUTF8Encoder.encode(returnURL) : "";
 
-		String federatedLoginURL = FederatedConfiguration.getInstance()
+		String federatedLoginURL = FederatedConfiguration.getInstance(request)
 				.getStsUrl()
 				+ "?wa=wsignin1.0&wtrealm="	+ encodedRealm
 				+ "&wctx=" + encodedRequest

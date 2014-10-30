@@ -29,79 +29,69 @@ package com.auth10.federation;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+
 public class FederatedConfiguration {
-	private static FederatedConfiguration instance = null;
-	private Properties properties;
 
-	public static FederatedConfiguration getInstance() {
-		if (instance == null) {
-			synchronized (FederatedConfiguration.class) {
-				instance = load();
-			}
-		}
+    public static final String CLASS_PROPERTY = "federation.config.loader";
+   
+    public static IFederatedConfiguration getInstance(HttpServletRequest request) {      
+        return load(request);
+    }
 
-		return instance;
-	}
+    private static IFederatedConfiguration load(HttpServletRequest request) {
+        java.util.Properties props = new java.util.Properties();
+        IFederatedConfiguration configurator = null;
+        try {
+            InputStream is = FederatedConfiguration.class.getResourceAsStream("/federation.properties");
+            props.load(is);
+            String className = props.getProperty(CLASS_PROPERTY, "com.auth10.federation.BasicFileConfiguration");
+            if (!StringUtils.isEmpty(className)){
+                Constructor<?> declaredConstructor = Class.forName(className).getDeclaredConstructor(HttpServletRequest.class);
+                configurator =  (IFederatedConfiguration) declaredConstructor.newInstance(request);
+            }
 
-	private static FederatedConfiguration load() {
-		java.util.Properties props = new java.util.Properties();
+        } catch (IOException e) {
+            throw new RuntimeException("Configuration could not be loaded", e);
+        } catch (NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+      
+        /*
+        if (configurator == null){
+            //Utilizamos los valores por defecto
+            configurator = new BasicFileConfiguration(request);
+        }
+        */
 
-		try {
-			InputStream is = FederatedConfiguration.class.getResourceAsStream("/federation.properties");
-			props.load(is);
-		} catch (IOException e) {
-			throw new RuntimeException("Configuration could not be loaded", e);
-		}
+        return configurator;
+    }
 
-		return new FederatedConfiguration(props);
-	}
-
-	private FederatedConfiguration(Properties properties) {
-		this.properties = properties;
-	}
-
-	public String getStsUrl() {
-		return this.properties.getProperty("federation.trustedissuers.issuer");
-	}
-
-	public String getStsFriendlyName() {
-		return this.properties.getProperty("federation.trustedissuers.friendlyname");
-	}
-	
-	public String getThumbprint() {
-		return this.properties.getProperty("federation.trustedissuers.thumbprint");
-	}
-
-	public String getRealm() {
-		return this.properties.getProperty("federation.realm");
-	}
-
-	public String getReply() {
-		return this.properties.getProperty("federation.reply");
-	}
-
-	public String[] getTrustedIssuers() {
-		String trustedIssuers = this.properties.getProperty("federation.trustedissuers.subjectname");
-		
-		if (trustedIssuers != null)
-			return trustedIssuers.split("\\|");
-		else
-			return null;
-	}
-
-	public String[] getAudienceUris() {
-		return this.properties.getProperty("federation.audienceuris").split("\\|");
-	}
-	
-	public Boolean getEnableManualRedirect() {
-		String manual = this.properties.getProperty("federation.enableManualRedirect");
-		if (manual != null && Boolean.parseBoolean(manual)) {
-			return true;
-		}
-		
-		return false;
-	}
+  
 
 }

@@ -50,7 +50,7 @@ public class WSFederationFilter implements Filter {
                                         .matcher(httpRequest.getRequestURL().toString()).find());
 
         if (!excludedUrl && principal == null) {
-            if (!FederatedConfiguration.getInstance().getEnableManualRedirect()) {
+            if (!FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
                 this.redirectToIdentityProvider(httpRequest, httpResponse);
             } else {
                 this.redirectToLoginPage(httpRequest, httpResponse);
@@ -70,7 +70,7 @@ public class WSFederationFilter implements Filter {
 
     protected void redirectToIdentityProvider(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String wctx = getRequestPathAndQuery(httpRequest);
-        String redirect = FederatedLoginManager.getFederatedLoginUrl(wctx);
+        String redirect = FederatedLoginManager.getFederatedLoginUrl(httpRequest,wctx);
 
         httpResponse.setHeader("Location", redirect);
         httpResponse.setStatus(302);
