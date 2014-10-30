@@ -10,6 +10,7 @@ public interface IFederatedConfiguration {
 
     public abstract String getRealm();
 
+    public abstract String getReplyLogout();
     public abstract String getReply();
 
     public abstract String[] getTrustedIssuers();

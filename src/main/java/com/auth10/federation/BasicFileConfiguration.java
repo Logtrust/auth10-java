@@ -121,4 +121,9 @@ public class BasicFileConfiguration extends AbstractFederationConfiguration {
         return false;
     }
 
+    @Override
+    public String getReplyLogout() {
+        return this.properties.getProperty("federation.reply.logout");
+    }
+
 }

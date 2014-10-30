@@ -17,10 +17,12 @@ public class WSFederationFilter implements Filter {
     private static final String PRINCIPAL_SESSION_VARIABLE = "FederatedPrincipal";
 
     private String loginPage;
+    private String loginOut;
     private String excludedUrlsRegex;
 
     public void init(FilterConfig config) throws ServletException {
         this.loginPage = config.getInitParameter("login-page-url");
+        this.loginOut = config.getInitParameter("loginout-page-url");
         this.excludedUrlsRegex = config.getInitParameter("exclude-urls-regex");
     }
 
@@ -67,7 +69,8 @@ public class WSFederationFilter implements Filter {
         httpResponse.setHeader("Location", redirect);
         httpResponse.setStatus(302);
     }
-
+    
+ 
     protected void redirectToIdentityProvider(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String wctx = getRequestPathAndQuery(httpRequest);
         String redirect = FederatedLoginManager.getFederatedLoginUrl(httpRequest,wctx);
@@ -92,6 +95,7 @@ public class WSFederationFilter implements Filter {
 
         return false;
     }
+    
 
     protected Boolean sessionTokenExists(HttpServletRequest request) {
         // this could use signed cookies instead of sessions

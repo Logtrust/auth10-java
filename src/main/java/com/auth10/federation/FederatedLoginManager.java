@@ -41,116 +41,145 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
 public class FederatedLoginManager {
-	private static final DateTimeFormatter CHECKING_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
-	
-	private HttpServletRequest request;
-	private FederatedAuthenticationListener listener;
+    private static final DateTimeFormatter CHECKING_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
 
-	public static FederatedLoginManager fromRequest(HttpServletRequest request) {
-		return fromRequest(request, null);
-	}
+    private HttpServletRequest request;
+    private FederatedAuthenticationListener listener;
 
-	public static FederatedLoginManager fromRequest(HttpServletRequest request, FederatedAuthenticationListener listener) {
-		return new FederatedLoginManager(request, listener);
-	}
+    public static FederatedLoginManager fromRequest(HttpServletRequest request) {
+        return fromRequest(request, null);
+    }
 
-	protected FederatedLoginManager(HttpServletRequest request, FederatedAuthenticationListener listener) {
-		this.request = request;
-		this.listener = listener;
-	}
+    public static FederatedLoginManager fromRequest(HttpServletRequest request, FederatedAuthenticationListener listener) {
+        return new FederatedLoginManager(request, listener);
+    }
 
-	public final FederatedPrincipal authenticate(String token, HttpServletResponse response) throws FederationException {
-		List<Claim> claims = null;
+    protected FederatedLoginManager(HttpServletRequest request, FederatedAuthenticationListener listener) {
+        this.request = request;
+        this.listener = listener;
+    }
 
-		try {
-			SamlTokenValidator validator = new SamlTokenValidator();
+    public final FederatedPrincipal authenticate(String token, HttpServletResponse response) throws FederationException {
+        List<Claim> claims = null;
 
-			this.setTrustedIssuers(validator);
-			
-			this.setAudienceUris(validator);
+        try {
+            SamlTokenValidator validator = new SamlTokenValidator();
 
-			this.setThumbprint(validator);			
+            this.setTrustedIssuers(validator);
 
-			claims = validator.validate(token);
+            this.setAudienceUris(validator);
 
-			FederatedPrincipal principal = new FederatedPrincipal(claims);
-			
-			if (listener != null) listener.OnAuthenticationSucceed(principal);
-			
-			return principal;			
-		} catch (FederationException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new FederationException("Federated Login failed!", e);
-		} finally {
-			if (claims == null) {
-				request.getSession().invalidate();
-				throw new FederationException("Invalid Token");
-			}
-		}
-	}
-		
-	protected void setTrustedIssuers(SamlTokenValidator validator) 
-			throws FederationException {
-		String[] trustedIssuers = FederatedConfiguration.getInstance(request).getTrustedIssuers();
-		if (trustedIssuers != null) {
-			validator.getTrustedIssuers().addAll(Arrays.asList(trustedIssuers));
-		}		
-	}
-	
-	protected void setAudienceUris(SamlTokenValidator validator) 
-			throws FederationException {
-		String[] audienceUris = FederatedConfiguration.getInstance(request).getAudienceUris();
-		for (String audienceUriStr : audienceUris) {
-			try {
-				validator.getAudienceUris().add(new URI(audienceUriStr));
-			} catch (URISyntaxException e) {
-				throw new FederationException("Federated Login Configuration failure: Invalid Audience URI", e);
-			}
-		}
-	}
-	
-	protected void setThumbprint(SamlTokenValidator validator)
-			throws FederationException {
-		String thumbprint = FederatedConfiguration.getInstance(request).getThumbprint();
-		validator.setThumbprint(thumbprint);
-	}
+            this.setThumbprint(validator);
 
-	public static String getFederatedLoginUrl(HttpServletRequest request, String returnURL) {
-		return getFederatedLoginUrl(request, null, null, returnURL); 
-	}
-	
-	public static String getFederatedLoginUrl(HttpServletRequest request, String realm, String replyURL, String returnURL) {
-		Calendar c = Calendar.getInstance();
+            claims = validator.validate(token);
 
-		String encodedDate = CHECKING_FORMAT.print(c.getTimeInMillis());
+            FederatedPrincipal principal = new FederatedPrincipal(claims);
 
-		if (realm == null) {
-			realm = FederatedConfiguration.getInstance(request).getRealm();
-		}
-		String encodedRealm = URLUTF8Encoder.encode(realm);
+            if (listener != null)
+                listener.OnAuthenticationSucceed(principal);
 
-		String encodedReply = null;
-		if (replyURL != null) {			
-			encodedReply = URLUTF8Encoder.encode(replyURL);
-		}
-		else {
-			encodedReply = (FederatedConfiguration.getInstance(request).getReply() != null) ? URLUTF8Encoder.encode(FederatedConfiguration.getInstance(request).getReply()) : null;
-		}
+            return principal;
+        } catch (FederationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new FederationException("Federated Login failed!", e);
+        } finally {
+            if (claims == null) {
+                request.getSession().invalidate();
+                throw new FederationException("Invalid Token");
+            }
+        }
+    }
 
-		String encodedRequest = (returnURL != null) ? URLUTF8Encoder.encode(returnURL) : "";
+    protected void setTrustedIssuers(SamlTokenValidator validator) throws FederationException {
+        String[] trustedIssuers = FederatedConfiguration.getInstance(request).getTrustedIssuers();
+        if (trustedIssuers != null) {
+            validator.getTrustedIssuers().addAll(Arrays.asList(trustedIssuers));
+        }
+    }
 
-		String federatedLoginURL = FederatedConfiguration.getInstance(request)
-				.getStsUrl()
-				+ "?wa=wsignin1.0&wtrealm="	+ encodedRealm
-				+ "&wctx=" + encodedRequest
-				+ "&id=passive"
-				+ "&wct=" + encodedDate;
+    protected void setAudienceUris(SamlTokenValidator validator) throws FederationException {
+        String[] audienceUris = FederatedConfiguration.getInstance(request).getAudienceUris();
+        for (String audienceUriStr : audienceUris) {
+            try {
+                validator.getAudienceUris().add(new URI(audienceUriStr));
+            } catch (URISyntaxException e) {
+                throw new FederationException("Federated Login Configuration failure: Invalid Audience URI", e);
+            }
+        }
+    }
 
-		if (encodedReply != null) {
-			federatedLoginURL += "&wreply=" + encodedReply;
-		}
+    protected void setThumbprint(SamlTokenValidator validator) throws FederationException {
+        String thumbprint = FederatedConfiguration.getInstance(request).getThumbprint();
+        validator.setThumbprint(thumbprint);
+    }
 
-		return federatedLoginURL;
-	}
+    public static String getFederatedLoginUrl(HttpServletRequest request, String returnURL) {
+        return getFederatedLoginUrl(request, null, null, returnURL);
+    }
+
+    public static String getFederatedLogOutUrl(HttpServletRequest request) {
+        return getFederatedLogOutUrl(request, null, null);
+    }
+
+    public static String getFederatedLoginUrl(HttpServletRequest request, String realm, String replyURL,
+                    String returnURL) {
+        Calendar c = Calendar.getInstance();
+
+        String encodedDate = CHECKING_FORMAT.print(c.getTimeInMillis());
+
+        if (realm == null) {
+            realm = FederatedConfiguration.getInstance(request).getRealm();
+        }
+        String encodedRealm = URLUTF8Encoder.encode(realm);
+
+        String encodedReply = null;
+        if (replyURL != null) {
+            encodedReply = URLUTF8Encoder.encode(replyURL);
+        } else {
+            encodedReply = (FederatedConfiguration.getInstance(request).getReply() != null) ? URLUTF8Encoder
+                            .encode(FederatedConfiguration.getInstance(request).getReply()) : null;
+        }
+
+        String encodedRequest = (returnURL != null) ? URLUTF8Encoder.encode(returnURL) : "";
+
+        String federatedLoginURL = FederatedConfiguration.getInstance(request).getStsUrl() + "?wa=wsignin1.0&wtrealm="
+                        + encodedRealm + "&wctx=" + encodedRequest + "&id=passive" + "&wct=" + encodedDate;
+
+        if (encodedReply != null) {
+            federatedLoginURL += "&wreply=" + encodedReply;
+        }
+
+        return federatedLoginURL;
+    }
+
+    public static String getFederatedLogOutUrl(HttpServletRequest request, String realm, String replyURL) {
+        Calendar c = Calendar.getInstance();
+
+        String encodedDate = CHECKING_FORMAT.print(c.getTimeInMillis());
+
+        if (realm == null) {
+            realm = FederatedConfiguration.getInstance(request).getRealm();
+        }
+        String encodedRealm = URLUTF8Encoder.encode(realm);
+
+        String encodedReply = null;
+        if (replyURL != null) {
+            encodedReply = URLUTF8Encoder.encode(replyURL);
+        } else {
+            encodedReply = (FederatedConfiguration.getInstance(request).getReplyLogout() != null) ? URLUTF8Encoder
+                            .encode(FederatedConfiguration.getInstance(request).getReplyLogout()) : null;
+        }
+      
+        // ?wa=wsignout1.0&wtrealm=http://pandasecurity.local:8080/ws-federation
+
+        String federatedLoginURL = FederatedConfiguration.getInstance(request).getStsUrl() + "?wa=wsignout1.0&wtrealm="
+                        + encodedRealm;
+
+        if (encodedReply != null) {
+            federatedLoginURL += "&wreply=" + encodedReply;
+        }
+
+        return federatedLoginURL;
+    }
 }
