@@ -39,7 +39,8 @@ import org.apache.commons.lang.StringUtils;
 
 public class FederatedConfiguration {
 
-    public static final String CLASS_PROPERTY = "federation.config.loader";
+    public static final String LOADER_CLASS = "federation.config.loader";
+    public static final String LOGOUT_CLASS   = "federation.config.logout";
    
     public static IFederatedConfiguration getInstance(HttpServletRequest request) {      
         return load(request);
@@ -51,7 +52,7 @@ public class FederatedConfiguration {
         try {
             InputStream is = FederatedConfiguration.class.getResourceAsStream("/federation.properties");
             props.load(is);
-            String className = props.getProperty(CLASS_PROPERTY, "com.auth10.federation.BasicFileConfiguration");
+            String className = props.getProperty(LOADER_CLASS, "com.auth10.federation.BasicFileConfiguration");
             if (!StringUtils.isEmpty(className)){
                 Constructor<?> declaredConstructor = Class.forName(className).getDeclaredConstructor(HttpServletRequest.class);
                 configurator =  (IFederatedConfiguration) declaredConstructor.newInstance(request);
