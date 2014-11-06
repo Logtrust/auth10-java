@@ -61,12 +61,15 @@ public class WSFederationFilter implements Filter {
                                         .compile(this.excludedUrlsRegex)
                                         .matcher(httpRequest.getRequestURL().toString()).find());        
         
-        if (this.isRedirectoLoginInRequest(httpRequest)){
-            this.redirectToIdentityProvider(httpRequest, httpResponse);
-            return;
-        }
+       
 
         if (!excludedUrl && principal == null) {
+            
+            if (this.isRedirectoLoginInRequest(httpRequest)){
+                this.redirectToIdentityProvider(httpRequest, httpResponse);
+                return;
+            }
+            
             if (!FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
                 this.redirectToIdentityProvider(httpRequest, httpResponse);
             } else {
