@@ -107,7 +107,7 @@ public class WSFederationFilter implements Filter {
 
     
     protected Boolean isRedirectoLoginInRequest(HttpServletRequest request) {
-        String _wa = request.getParameter("wa");
+        String _wa = request.getParameter("exwa");
         if (request.getMethod().equals("GET") && (_wa != null && _wa.equals("login")) ) {
             return true;
         }
