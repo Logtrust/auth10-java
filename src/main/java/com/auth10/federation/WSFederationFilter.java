@@ -65,11 +65,6 @@ public class WSFederationFilter implements Filter {
 
         if (!excludedUrl && principal == null) {
             
-            if (this.isRedirectoLoginInRequest(httpRequest)){
-                this.redirectToIdentityProvider(httpRequest, httpResponse);
-                return;
-            }
-            
             if (!FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
                 this.redirectToIdentityProvider(httpRequest, httpResponse);
             } else {
@@ -105,15 +100,6 @@ public class WSFederationFilter implements Filter {
         }
     }
 
-    
-    protected Boolean isRedirectoLoginInRequest(HttpServletRequest request) {
-        String _wa = request.getParameter("exwa");
-        if (request.getMethod().equals("GET") && (_wa != null && _wa.equals("login")) ) {
-            return true;
-        }
-
-        return false;
-    }
     
     
     protected Boolean isSignInResponse(HttpServletRequest request) {
