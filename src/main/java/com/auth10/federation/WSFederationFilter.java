@@ -2,7 +2,7 @@ package com.auth10.federation;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
+import java.security.Principal;
 import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
@@ -14,11 +14,10 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 public class WSFederationFilter implements Filter {
 
-    private static final String PRINCIPAL_SESSION_VARIABLE = "FederatedPrincipal";
+    public static final String PRINCIPAL_SESSION_VARIABLE = "FederatedPrincipal";
 
     private String loginPage;
     private String loginOut;
@@ -33,46 +32,43 @@ public class WSFederationFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
                     ServletException {
 
-        FederatedPrincipal principal = null;
+        Principal principal = null;
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        
-        if (FederatedConfiguration.getInstance(httpRequest).useFederation()){//if is configured for ws-federation lets proceed
 
-            // is the request is a token?
-            if (this.isSignInResponse(httpRequest)) {
-                principal = this.authenticateWithToken(httpRequest, httpResponse);
-                this.writeSessionToken(httpRequest, principal);
-                this.redirectToOriginalUrl(httpRequest, httpResponse);
-            }
-            
-            // is the request is a token?
-            if (this.isSignOutRequest(httpRequest)) {
-               logOut(httpRequest, httpResponse);
-               return;
-            }
-    
-            // is principal in session?
-            if (principal == null && this.sessionTokenExists(httpRequest)) {
-                principal = this.authenticateWithSessionToken(httpRequest, httpResponse);
-            }
-    
-            // if not authenticated at this point, redirect to login page
-            boolean excludedUrl = httpRequest.getRequestURL().toString().contains(this.loginPage)
-                            || (this.excludedUrlsRegex != null && !this.excludedUrlsRegex.isEmpty() && Pattern
-                                            .compile(this.excludedUrlsRegex)
-                                            .matcher(httpRequest.getRequestURL().toString()).find());        
-          
-    
-            if (!excludedUrl && principal == null) {            
-                if (FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
-                    this.redirectToIdentityProvider(httpRequest, httpResponse);
-                } else {
-                    this.redirectToLoginPage(httpRequest, httpResponse);
-                }
-                return;
-            }
+        // is the request is a token?
+        if (this.isSignInResponse(httpRequest)) {
+            principal = this.authenticateWithToken(httpRequest, httpResponse);
+            this.writeSessionToken(httpRequest, principal);
+            this.redirectToOriginalUrl(httpRequest, httpResponse);
         }
+
+        // is the request is a token?
+        if (this.isSignOutRequest(httpRequest)) {
+            logOut(httpRequest, httpResponse);
+            return;
+        }
+
+        // is principal in session?
+        if (principal == null && this.sessionTokenExists(httpRequest)) {
+            principal = this.authenticateWithSessionToken(httpRequest, httpResponse);
+        }
+
+        // if not authenticated at this point, redirect to login page
+        boolean excludedUrl = httpRequest.getRequestURL().toString().contains(this.loginPage)
+                        || (this.excludedUrlsRegex != null && !this.excludedUrlsRegex.isEmpty() && Pattern
+                                        .compile(this.excludedUrlsRegex)
+                                        .matcher(httpRequest.getRequestURL().toString()).find());
+
+        if (!excludedUrl && principal == null) {
+            if (FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
+                this.redirectToIdentityProvider(httpRequest, httpResponse);
+            } else {
+                this.redirectToLoginPage(httpRequest, httpResponse);
+            }
+            return;
+        }
+
         chain.doFilter(new FederatedHttpServletRequest(httpRequest, principal), response);
     }
 
@@ -82,11 +78,10 @@ public class WSFederationFilter implements Filter {
         httpResponse.setHeader("Location", redirect);
         httpResponse.setStatus(302);
     }
-    
- 
+
     protected void redirectToIdentityProvider(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String wctx = getRequestPathAndQuery(httpRequest);
-        String redirect = FederatedLoginManager.getFederatedLoginUrl(httpRequest,wctx);
+        String redirect = FederatedLoginManager.getFederatedLoginUrl(httpRequest, wctx);
 
         httpResponse.setHeader("Location", redirect);
         httpResponse.setStatus(302);
@@ -100,8 +95,6 @@ public class WSFederationFilter implements Filter {
         }
     }
 
-    
-    
     protected Boolean isSignInResponse(HttpServletRequest request) {
         if (request.getMethod().equals("POST") && request.getParameter("wa").equals("wsignin1.0")
                         && request.getParameter("wresult") != null) {
@@ -110,29 +103,28 @@ public class WSFederationFilter implements Filter {
 
         return false;
     }
-    
-    
+
     protected Boolean isSignOutRequest(HttpServletRequest request) {
         String _wa = request.getParameter("wa");
-        if (request.getMethod().equals("GET") && (_wa != null && _wa.equals("wsignoutcleanup1.0")) ) {
+        if (request.getMethod().equals("GET") && (_wa != null && _wa.equals("wsignoutcleanup1.0"))) {
             return true;
         }
 
         return false;
     }
-    
-    private void logOut(HttpServletRequest request, HttpServletResponse httpResponse){
-        try { 
-            
+
+    private void logOut(HttpServletRequest request, HttpServletResponse httpResponse) {
+        try {
+
             InputStream is = FederatedConfiguration.class.getResourceAsStream("/federation.properties");
-            java.util.Properties props = new java.util.Properties(); 
+            java.util.Properties props = new java.util.Properties();
             props.load(is);
             String className = props.getProperty(FederatedConfiguration.LOGOUT_CLASS, null);
-            if (className != null){            
-                IFederatedLogout _logoutClass = (IFederatedLogout)Class.forName(className).newInstance();               
-                if (_logoutClass!= null){
+            if (className != null) {
+                IFederatedLogout _logoutClass = (IFederatedLogout) Class.forName(className).newInstance();
+                if (_logoutClass != null) {
                     _logoutClass.logout(request);
-                    InputStream in = this.getClass().getResourceAsStream("logout_icon.png");                
+                    InputStream in = this.getClass().getResourceAsStream("logout_icon.png");
                     ServletOutputStream out = httpResponse.getOutputStream();
                     byte[] buffer = new byte[1024];
                     int len = in.read(buffer);
@@ -141,27 +133,39 @@ public class WSFederationFilter implements Filter {
                         len = in.read(buffer);
                     }
                     out.close();
-                    in.close();                
+                    in.close();
                 }
-            }                           
-           
+            }
+
         } catch (Exception e) {
-            System.err.println("Error Cerrando sesion Federacion " +  e);//cambiarlo a usar log4j o simil.
+            System.err.println("Error Cerrando sesion Federacion " + e);// cambiarlo
+                                                                        // a
+                                                                        // usar
+                                                                        // log4j
+                                                                        // o
+                                                                        // simil.
         }
     }
-    
 
     protected Boolean sessionTokenExists(HttpServletRequest request) {
         // this could use signed cookies instead of sessions
         return request.getSession().getAttribute(PRINCIPAL_SESSION_VARIABLE) != null;
     }
 
-    protected FederatedPrincipal authenticateWithSessionToken(HttpServletRequest request, HttpServletResponse response)
+    /*
+     * protected FederatedPrincipal
+     * authenticateWithSessionToken(HttpServletRequest request,
+     * HttpServletResponse response) throws IOException { return
+     * (FederatedPrincipal)
+     * request.getSession().getAttribute(PRINCIPAL_SESSION_VARIABLE); }
+     */
+
+    protected Principal authenticateWithSessionToken(HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
-        return (FederatedPrincipal) request.getSession().getAttribute(PRINCIPAL_SESSION_VARIABLE);
+        return (Principal) request.getSession().getAttribute(PRINCIPAL_SESSION_VARIABLE);
     }
 
-    protected void writeSessionToken(HttpServletRequest request, FederatedPrincipal principal) throws IOException {
+    protected void writeSessionToken(HttpServletRequest request, Principal principal) throws IOException {
         request.getSession().setAttribute(PRINCIPAL_SESSION_VARIABLE, principal);
     }
 
