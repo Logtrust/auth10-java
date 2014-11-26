@@ -18,5 +18,7 @@ public interface IFederatedConfiguration {
     public abstract String[] getAudienceUris();
 
     public abstract Boolean getEnableManualRedirect();
+    
+    public abstract Boolean useFederation();
 
 }

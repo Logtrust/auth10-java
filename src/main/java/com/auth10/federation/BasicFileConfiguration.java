@@ -126,4 +126,10 @@ public class BasicFileConfiguration extends AbstractFederationConfiguration {
         return this.properties.getProperty("federation.reply.logout");
     }
 
+    @Override
+    public Boolean useFederation() {
+        //asumo que si esta configurada la federacion es por algo.
+        return true;
+    }
+
 }

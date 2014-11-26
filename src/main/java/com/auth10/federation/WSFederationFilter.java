@@ -36,42 +36,43 @@ public class WSFederationFilter implements Filter {
         FederatedPrincipal principal = null;
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-
-        // is the request is a token?
-        if (this.isSignInResponse(httpRequest)) {
-            principal = this.authenticateWithToken(httpRequest, httpResponse);
-            this.writeSessionToken(httpRequest, principal);
-            this.redirectToOriginalUrl(httpRequest, httpResponse);
-        }
         
-        // is the request is a token?
-        if (this.isSignOutRequest(httpRequest)) {
-           logOut(httpRequest, httpResponse);
-           return;
-        }
+        if (FederatedConfiguration.getInstance(httpRequest).useFederation()){//if is configured for ws-federation lets proceed
 
-        // is principal in session?
-        if (principal == null && this.sessionTokenExists(httpRequest)) {
-            principal = this.authenticateWithSessionToken(httpRequest, httpResponse);
-        }
-
-        // if not authenticated at this point, redirect to login page
-        boolean excludedUrl = httpRequest.getRequestURL().toString().contains(this.loginPage)
-                        || (this.excludedUrlsRegex != null && !this.excludedUrlsRegex.isEmpty() && Pattern
-                                        .compile(this.excludedUrlsRegex)
-                                        .matcher(httpRequest.getRequestURL().toString()).find());        
-        
-       
-
-        if (!excludedUrl && principal == null) {            
-            if (FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
-                this.redirectToIdentityProvider(httpRequest, httpResponse);
-            } else {
-                this.redirectToLoginPage(httpRequest, httpResponse);
+            // is the request is a token?
+            if (this.isSignInResponse(httpRequest)) {
+                principal = this.authenticateWithToken(httpRequest, httpResponse);
+                this.writeSessionToken(httpRequest, principal);
+                this.redirectToOriginalUrl(httpRequest, httpResponse);
             }
-            return;
+            
+            // is the request is a token?
+            if (this.isSignOutRequest(httpRequest)) {
+               logOut(httpRequest, httpResponse);
+               return;
+            }
+    
+            // is principal in session?
+            if (principal == null && this.sessionTokenExists(httpRequest)) {
+                principal = this.authenticateWithSessionToken(httpRequest, httpResponse);
+            }
+    
+            // if not authenticated at this point, redirect to login page
+            boolean excludedUrl = httpRequest.getRequestURL().toString().contains(this.loginPage)
+                            || (this.excludedUrlsRegex != null && !this.excludedUrlsRegex.isEmpty() && Pattern
+                                            .compile(this.excludedUrlsRegex)
+                                            .matcher(httpRequest.getRequestURL().toString()).find());        
+          
+    
+            if (!excludedUrl && principal == null) {            
+                if (FederatedConfiguration.getInstance(httpRequest).getEnableManualRedirect()) {
+                    this.redirectToIdentityProvider(httpRequest, httpResponse);
+                } else {
+                    this.redirectToLoginPage(httpRequest, httpResponse);
+                }
+                return;
+            }
         }
-
         chain.doFilter(new FederatedHttpServletRequest(httpRequest, principal), response);
     }
 
