@@ -35,30 +35,4 @@ public class SAMLMetadataBuilder {
 
     return ret;
   }
-
-  /*
-  public static SAMLMetaData build(String fqdn, String idpmetadataContent)
-      throws ConfigurationException, MetadataProviderException, SAXException, IOException, ParserConfigurationException {
-    SAMLMetaData ret = null;
-    
-
-
-    Element node = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-        .parse(new ByteArrayInputStream(idpmetadataContent.getBytes()))
-        .getDocumentElement();
-
-    DefaultBootstrap.bootstrap();
-    MetadataProvider provider = new FilesystemMetadataProvider(tmpFile);
-
-    provider.setRequireValidMetadata(true);
-    provider.setParserPool(new BasicParserPool());
-    provider.initialize();
-
-    EntityDescriptor idpEntityDescriptor = provider.getEntityDescriptor(fqdn);
-
-    ret = new SAMLMetaData(idpEntityDescriptor);
-
-    return ret;
-  }
-*/
 }
